@@ -102,6 +102,9 @@ try:
 except Exception as e:
     error("no wasm file ", "in expected directory, see glob error: ", e)
 
+if not paths:
+    error("no wasm file ", "in expected directory")
+
 cmd = run(["wasm-bindgen", "--target", "web", "--out-dir", "dist", "--no-typescript", paths[0]])
 
 if cmd.returncode:
