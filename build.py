@@ -97,13 +97,19 @@ if cmd.returncode:
 
 print("bundling wasm")  # ---
 
+path = "target/wasm32-unknown-unknown/"
+if release:
+    path += "release/*.wasm"
+else:
+    path += "debug/*.wasm"
+
 try:
-    paths = glob("target/wasm32-unknown-unknown/debug/*.wasm")
+    paths = glob(path)
 except Exception as e:
     error("no wasm file ", "in expected directory, see glob error: ", e)
 
 if not paths:
-    error("no wasm file ", "in expected directory")
+    error("no wasm file ", "in expected directory", f"missing {path}")
 
 cmd = run(["wasm-bindgen", "--target", "web", "--out-dir", "dist", "--no-typescript", paths[0]])
 
