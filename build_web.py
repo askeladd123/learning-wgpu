@@ -38,20 +38,37 @@ def ok(important, less_important=None, least_important=None):
 
 
 release = False
+clean = False
 intro = "this is a script for compiling and bundling wasm for a static website"
 
+args = [
+    ["-h", "--help"],
+    ["-r", "--release"],
+    ["-c", "--clean"],
+]
+
 if 1 < len(argv):
-    if argv[1] in ["-h", "--help"]:
+
+    found = False
+
+    if not set(argv[1:])&set(sum(args, [])):
+        error(f"{argv[1:]} is not valid")
+
+    # if argv[1] in ["-h", "--help"]:
+    if set(argv[1:])&set(args[0]):
         print(
             f"{intro} - showing help\noptions:\n"
-            "\t-r\t--release\tuse rust compiler in release mode instead of debug"
-            "\n"
+            "\t-r\t--release\tuse rust compiler in release mode instead of debug\n"
+            "\t-c\t--clean\tremove files from last build\n"
         )
         exit(0)
-    elif argv[1] in ["-r", "--release"]:
-        release = True
-    else:
-        error(f"{argv[1]} is not a valid argument")
+    release = bool(set(argv[1:])&set(args[1]))
+    clean = bool(set(argv[1:])&set(args[2]))
+
+# elif argv[1] in ["-r", "--release"]:
+    #     release = True
+    # else:
+    #     error(f"{argv[1:]} is not valid")
 
 print(intro)
 
@@ -65,13 +82,13 @@ if platform not in platforms:
 
 print("checking for rust toolkit")  # ---
 
-cmd = run(["rustup", "--version"], capture_output=True)
+cmd = run(["rustup", "--version"], capture_output=True, text=True)
 if cmd.returncode:
-    error("couldn't find rustup, ", "download from rust-lang.org/tools/install", cmd.stderr.decode())
+    error("couldn't find rustup, ", "download from rust-lang.org/tools/install", cmd.stderr)
 
-cmd = run(["cargo", "--version"], capture_output=True)
+cmd = run(["cargo", "--version"], capture_output=True, text=True)
 if cmd.returncode:
-    error("couldn't find cargo", " but found rustup, idk how", cmd.stderr.decode())
+    error("couldn't find cargo", " but found rustup, idk how", cmd.stderr)
 
 print("checking for rust wasm compiler")  # ---
 
@@ -85,9 +102,19 @@ cmd = run(["cargo", "install", "wasm-bindgen-cli"])
 if cmd.returncode:
     exit(cmd.returncode)
 
+if clean:
+    print("removing old files")
+    cmd = run(["cargo", "clean"], capture_output=True, text=True)
+    if cmd.returncode:
+        warn("failed to clean, ", "see cargo error:", cmd.stdout)
+    try:
+        shutil.rmtree("dist")
+    except Exception as e:
+        warn("failed to clean, ", "couldn't delete dist folder, see shutil error:", e)
+
 print("compiling wasm")  # ---
 
-cmd = ["cargo", "build", "--target", "wasm32-unknown-unknown"]
+cmd = ["cargo", "build", "--lib", "--target", "wasm32-unknown-unknown"]
 if release:
     cmd.append("--release")
 cmd = run(cmd)

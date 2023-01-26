@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
+mod window;
 
-#[wasm_bindgen(start)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen(start))]
 pub fn run(){
-    web_sys::console::log_1(&"hello man".into());
+    window::run()
 }
