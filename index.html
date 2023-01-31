@@ -5,8 +5,12 @@
     </head>
     <body>
         <script type="module">
-            import init from "./pathfinding_wgpu_web.js"
+            console.log("tryna load wasm")
+            import init from "./dist/pathfinding_wgpu_web.js"
+            console.log("imported wasm")
             await init()
+            console.log("loaded wasm")
+
         </script>
         <p>check javascript console</p>
     </body>
