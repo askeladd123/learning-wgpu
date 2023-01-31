@@ -1,3 +1,4 @@
+import os
 import shutil
 from glob import glob
 from subprocess import run
@@ -39,12 +40,14 @@ def ok(important, less_important=None, least_important=None):
 
 release = False
 clean = False
+rm_src = False
 intro = "this is a script for compiling and bundling wasm for a static website"
 
 args = [
     ["-h", "--help"],
     ["-r", "--release"],
     ["-c", "--clean"],
+    ["--rm-src"]
 ]
 
 if 1 < len(argv):
@@ -54,21 +57,28 @@ if 1 < len(argv):
     if not set(argv[1:])&set(sum(args, [])):
         error(f"{argv[1:]} is not valid")
 
-    # if argv[1] in ["-h", "--help"]:
     if set(argv[1:])&set(args[0]):
         print(
             f"{intro} - showing help\noptions:\n"
             "\t-r\t--release\tuse rust compiler in release mode instead of debug\n"
             "\t-c\t--clean\tremove files from last build\n"
+            "\t\t--rm-src\tremoves all development files!!!"
         )
         exit(0)
+    if set(argv[1:])&set(args[3]):
+        print("are you sure you want to remove all development files? they cannot be recovered\n"
+              "\ty=YES, n=NO")
+        i = input()
+        if i.lower() not in ["y", "n"]:
+            error(f"{i} is not valid, ", "try y for YES, n for NO")
+        i = i.lower()
+        if i == "n":
+            exit(0)
+        if i == "y":
+            rm_src = True
+
     release = bool(set(argv[1:])&set(args[1]))
     clean = bool(set(argv[1:])&set(args[2]))
-
-# elif argv[1] in ["-r", "--release"]:
-    #     release = True
-    # else:
-    #     error(f"{argv[1:]} is not valid")
 
 print(intro)
 
@@ -143,14 +153,32 @@ cmd = run(["wasm-bindgen", "--target", "web", "--out-dir", "dist", "--no-typescr
 if cmd.returncode:
     exit(cmd.returncode)
 
-print("copying index.html")  # ---
-try:
-    shutil.copy("index.html", "dist")
-except Exception as e:
-    error(
-        "couldn't copy file, ",
-        "missing index.html? using unsupported OS?",
-        e
-    )
+# print("copying index.html")  # ---
+# try:
+#     shutil.copy("index.html", "dist")
+# except Exception as e:
+#     error(
+#         "couldn't copy file, ",
+#         "missing index.html? using unsupported OS?",
+#         e
+#     )
+
+if rm_src:
+    print("removing development files")
+    dev_folders = next(os.walk("."))[1]
+    dev_files = next(os.walk("."))[2]
+
+    dev_folders.remove("dist")
+    dev_folders.remove(".git")
+    dev_files.remove("index.html")
+
+    try:
+        for f in dev_folders:
+            shutil.rmtree(f)
+        for f in dev_files:
+            os.remove(f)
+    except Exception as e:
+            warn("couldn't remove all development files", "see shutil/os error", e)
+
 
 ok("files built, ", "now you can use them with a http server")

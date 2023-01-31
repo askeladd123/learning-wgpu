@@ -4,7 +4,19 @@ use winit::{
     window::WindowBuilder,
 };
 
-pub fn run() {
+pub struct Data{
+    #[cfg(target_arch = "wasm32")] a:u8,
+}
+
+impl Data {
+    pub fn new()->Self{
+        Self{
+            #[cfg(target_arch = "wasm32")] a:3,
+        }
+    }
+}
+
+pub fn run(d:&mut Data) {
     let event_loop = EventLoop::new();
 
     let window = WindowBuilder::new()
@@ -16,8 +28,6 @@ pub fn run() {
         let log_list = wasm::insert_canvas_and_create_log_list(&window);
 
     event_loop.run(move |event, _, control_flow| {
-        control_flow.set_wait();
-
         #[cfg(wasm_platform)]
         wasm::log_event(&log_list, &event);
 
@@ -30,7 +40,7 @@ pub fn run() {
                 window.request_redraw();
             }
             _ => (),
-        }
+        };
     });
 }
 
