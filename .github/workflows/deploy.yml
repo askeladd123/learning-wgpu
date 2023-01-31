@@ -8,8 +8,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Running custom build script
-        run: python3 build_web.py --release
+        run: python3 build_web.py --release --rm-src;y
       - name: Deploying to Github Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist
+          folder: .
