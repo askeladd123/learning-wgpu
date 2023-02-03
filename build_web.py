@@ -124,7 +124,7 @@ if clean:
 
 print("compiling wasm")  # ---
 
-cmd = ["cargo", "build", "--lib", "--target", "wasm32-unknown-unknown"]
+cmd = ["cargo", "build", "--target", "wasm32-unknown-unknown"]
 if release:
     cmd.append("--release")
 cmd = run(cmd)
