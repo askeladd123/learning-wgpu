@@ -1,16 +1,21 @@
+use std::borrow::Cow;
 use winit::{
     event::{Event, WindowEvent},
-    event_loop::EventLoop,
+    event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
+    window::Window,
 };
+
 fn main() {
-    #[cfg(target_arch = "wasm32")]
-    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
     run();
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen(start))]
 pub fn run() {
+    
+    #[cfg(target_arch = "wasm32")]
+    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+
     let event_loop = EventLoop::new();
 
     let window = WindowBuilder::new()
@@ -18,75 +23,165 @@ pub fn run() {
         .build(&event_loop)
         .unwrap();
 
-    #[cfg(wasm_platform)]
-    let log_list = wasm::insert_canvas_and_create_log_list(&window);
-
-    event_loop.run(move |event, _, control_flow| {
-        #[cfg(wasm_platform)]
-        wasm::log_event(&log_list, &event);
-
-        match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                window_id,
-            } if window_id == window.id() => control_flow.set_exit(),
-            Event::MainEventsCleared => {
-                window.request_redraw();
-            }
-            _ => (),
-        };
-    });
+   #[cfg(not(target_arch = "wasm32"))]
+    {
+        pollster::block_on(lol(event_loop, window));
+    } 
+   #[cfg(target_arch = "wasm32")]
+    {
+        // console_log::init().expect("could not initialize logger");
+        use winit::platform::web::WindowExtWebSys;
+        web_sys::window()
+            .and_then(|win| win.document())
+            .and_then(|doc| doc.body())
+            .and_then(|body| {
+                body.append_child(&web_sys::Element::from(window.canvas()))
+                    .ok()
+            })
+            .expect("couldn't append canvas to document body");
+        wasm_bindgen_futures::spawn_local(lol(event_loop, window));
+    }
 }
 
-#[cfg(wasm_platform)]
-mod wasm {
-    use wasm_bindgen::prelude::*;
-    use winit::{event::Event, window::Window};
+async fn lol(event_loop: EventLoop<()>, window: Window){
+    let size = window.inner_size();
 
-    #[wasm_bindgen(start)]
-    pub fn run() {
-        console_log::init_with_level(log::Level::Debug).expect("error initializing logger");
+    println!("trying 1");
 
-        #[allow(clippy::main_recursion)]
-        super::main();
-    }
+    let instance = wgpu::Instance::default();
 
-    pub fn insert_canvas_and_create_log_list(window: &Window) -> web_sys::Element {
-        use winit::platform::web::WindowExtWebSys;
+    println!("trying 2");
 
-        let canvas = window.canvas();
+    let surface = unsafe { instance.create_surface(&window) }.unwrap();
+    
+    println!("trying 3");
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let body = document.body().unwrap();
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::default(),
+            force_fallback_adapter: false,
+            // Request an adapter which can render to our surface
+            compatible_surface: Some(&surface),
+        })
+        .await
+        .expect("Failed to find an appropriate adapter");
 
-        // Set a background color for the canvas to make it easier to tell where the canvas is for debugging purposes.
-        canvas.style().set_css_text("background-color: crimson;");
-        body.append_child(&canvas).unwrap();
+    println!("{:?}", adapter.get_info().backend);
 
-        let log_header = document.create_element("h2").unwrap();
-        log_header.set_text_content(Some("Event Log"));
-        body.append_child(&log_header).unwrap();
+    // Create the logical device and command queue
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::empty(),
+                // Make sure we use the texture resolution limits from the adapter, so we can support images the size of the swapchain.
+                limits: wgpu::Limits::downlevel_webgl2_defaults()
+                    .using_resolution(adapter.limits()),
+            },
+            None,
+        )
+        .await
+        .expect("Failed to create device");
 
-        let log_list = document.create_element("ul").unwrap();
-        body.append_child(&log_list).unwrap();
-        log_list
-    }
+    // Load the shaders from disk
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: None,
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
+    });
 
-    pub fn log_event(log_list: &web_sys::Element, event: &Event<()>) {
-        log::debug!("{:?}", event);
+    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: None,
+        bind_group_layouts: &[],
+        push_constant_ranges: &[],
+    });
 
-        // Getting access to browser logs requires a lot of setup on mobile devices.
-        // So we implement this basic logging system into the page to give developers an easy alternative.
-        // As a bonus its also kind of handy on desktop.
-        if let Event::WindowEvent { event, .. } = &event {
-            let window = web_sys::window().unwrap();
-            let document = window.document().unwrap();
-            let log = document.create_element("li").unwrap();
-            log.set_text_content(Some(&format!("{:?}", event)));
-            log_list
-                .insert_before(&log, log_list.first_child().as_ref())
-                .unwrap();
+    let swapchain_capabilities = surface.get_capabilities(&adapter);
+    let swapchain_format = swapchain_capabilities.formats[0];
+
+    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: None,
+        layout: Some(&pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: "vs_main",
+            buffers: &[],
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: "fs_main",
+            targets: &[Some(swapchain_format.into())],
+        }),
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default(),
+        multiview: None,
+    });
+
+    let mut config = wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        format: swapchain_format,
+        width: size.width,
+        height: size.height,
+        present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: swapchain_capabilities.alpha_modes[0],
+        view_formats: vec![],
+    };
+
+    surface.configure(&device, &config);
+
+    event_loop.run(move |event, _, control_flow| {
+        // Have the closure take ownership of the resources.
+        // `event_loop.run` never returns, therefore we must do this to ensure
+        // the resources are properly cleaned up.
+        let _ = (&instance, &adapter, &shader, &pipeline_layout);
+
+        *control_flow = ControlFlow::Wait;
+        match event {
+            Event::WindowEvent {
+                event: WindowEvent::Resized(size),
+                ..
+            } => {
+                // Reconfigure the surface with the new size
+                config.width = size.width;
+                config.height = size.height;
+                surface.configure(&device, &config);
+                // On macos the window needs to be redrawn manually after resizing
+                window.request_redraw();
+            }
+            Event::RedrawRequested(_) => {
+                let frame = surface
+                    .get_current_texture()
+                    .expect("Failed to acquire next swap chain texture");
+                let view = frame
+                    .texture
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+                let mut encoder =
+                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+                {
+                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: None,
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
+                                store: true,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                    });
+                    rpass.set_pipeline(&render_pipeline);
+                    rpass.draw(0..3, 0..1);
+                }
+
+                queue.submit(Some(encoder.finish()));
+                frame.present();
+            }
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => *control_flow = ControlFlow::Exit,
+            _ => {}
         }
-    }
+    });
 }
