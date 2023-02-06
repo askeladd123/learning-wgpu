@@ -16,6 +16,8 @@ pub fn run() {
     #[cfg(target_arch = "wasm32")]
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
+    panic!("lol");
+
     let event_loop = EventLoop::new();
 
     let window = WindowBuilder::new()

@@ -1,0 +1,1 @@
+`cargo watch -s "cargo build --target wasm32-unknown-unknown | wasm-bindgen target/wasm32-unknown-unknown/debug/pathfinding-wgpu.wasm --target web --out-dir dist --no-typescript" --ignore target --ignore dist`
