@@ -4,5 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-cargo = "0.68.0"
 glob = "0.3.1"

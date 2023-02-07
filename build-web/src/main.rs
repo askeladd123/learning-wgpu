@@ -124,6 +124,39 @@ fn main() {
 
     if rm_src{
         println!("removing development files");
+
+        let mut files = Vec::new();
+        let mut folders = Vec::new();
+
+        for val in std::fs::read_dir(".").unwrap(){            
+                   
+            let f = val.unwrap();
+            
+            let name = f.file_name().into_string().unwrap();
+            if 
+            name.contains("index.html") ||
+            name.contains("dist") ||
+            name.contains(".git"){
+                continue
+            }
+            
+            if f.file_type().unwrap().is_file() {
+                    files.push(f.file_name());
+            } 
+            else if f.file_type().unwrap().is_dir(){
+                folders.push(f.file_name())
+            } else {
+                error("weird file types");
+            }
+        }
+
+        for file in files.iter(){
+            std::fs::remove_file(file).unwrap();
+        }
+
+        for folder in folders.iter() {
+            std::fs::remove_dir_all(folder);
+        }
     }
 
     ok("files built, now you can use them with a http server")
