@@ -153,14 +153,14 @@ fn main() {
         for file in files.iter(){
             match std::fs::remove_file(file){
                 Ok(_)=>{},
-                Err(e)=>{warn(format!("failed to delete file: {file}\n\tbecause: {e}"))}
+                Err(e)=>{warn(format!("failed to delete file: {file:?}\n\tbecause: {e}"))}
             }
         }
 
         for folder in folders.iter() {
             match std::fs::remove_dir_all(folder){
                 Ok(_)=>{},
-                Err(e)=>{warn(format!("failed to delete folder: {folder}\n\tbecause: {e}"))}
+                Err(e)=>{warn(format!("failed to delete folder: {folder:?}\n\tbecause: {e}"))}
             }
         }
     }
