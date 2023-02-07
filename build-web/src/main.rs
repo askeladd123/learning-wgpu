@@ -83,11 +83,13 @@ fn main() {
     }
 
     println!("compiling wasm");
-    if let Err(_) = Command::new("cargo")
-    .arg("build")
-    .arg("--target")
-    .arg("wasm32-unknown-unknown")
-    .status() {
+
+    let mut args = vec!["build", "--target", "wasm32-unknown-unknown"];
+    if release {
+        args.push("--release");  
+    }
+
+    if let Err(_) = Command::new("cargo").args(args).status() {
         error("failed to compile wasm");
     }
 
@@ -102,7 +104,7 @@ fn main() {
     let path = match paths.next(){
         Some(Ok(v))=>v,
         _=>{
-            error("couln't find wasm file");
+            error("couldn't find wasm file");
             "".into()
         }
     };
@@ -112,11 +114,7 @@ fn main() {
 
     match Command::new("wasm-bindgen")
     .arg(path)
-    .arg("--target")
-    .arg("web")
-    .arg("--out-dir")
-    .arg("dist")
-    .arg("--no-typescript")
+    .args(["--target", "web", "--out-dir", "dist", "--no-typescript"])
     .spawn(){
         Ok(out)=>{},
         Err(out)=>{}
