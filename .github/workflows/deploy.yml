@@ -9,8 +9,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: Running custom build script
         run: echo 'y' | cargo build-web --release --rm-dev
-      - name: Removing custom build script
-        run: rm -r build-web
       - name: Deploying to Github Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
