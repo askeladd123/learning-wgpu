@@ -2,20 +2,23 @@ use std::borrow::Cow;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
     window::Window,
+    window::WindowBuilder,
 };
 
 fn main() {
-    run();
+    #[cfg(not(target_arch = "wasm32"))]
+    pollster::block_on(run());
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+        wasm_bindgen_futures::spawn_local(run());
+    }
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen(start))]
-pub fn run() {
-    
-    #[cfg(target_arch = "wasm32")]
-    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-
+pub async fn run() {
     let event_loop = EventLoop::new();
 
     let window = WindowBuilder::new()
@@ -23,13 +26,8 @@ pub fn run() {
         .build(&event_loop)
         .unwrap();
 
-   #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(target_arch = "wasm32")]
     {
-        pollster::block_on(lol(event_loop, window));
-    } 
-   #[cfg(target_arch = "wasm32")]
-    {
-        // console_log::init().expect("could not initialize logger");
         use winit::platform::web::WindowExtWebSys;
         web_sys::window()
             .and_then(|win| win.document())
@@ -39,22 +37,13 @@ pub fn run() {
                     .ok()
             })
             .expect("couldn't append canvas to document body");
-        wasm_bindgen_futures::spawn_local(lol(event_loop, window));
     }
-}
 
-async fn lol(event_loop: EventLoop<()>, window: Window){
     let size = window.inner_size();
-
-    println!("trying 1");
 
     let instance = wgpu::Instance::default();
 
-    println!("trying 2");
-
     let surface = unsafe { instance.create_surface(&window) }.unwrap();
-    
-    println!("trying 3");
 
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
@@ -65,8 +54,6 @@ async fn lol(event_loop: EventLoop<()>, window: Window){
         })
         .await
         .expect("Failed to find an appropriate adapter");
-
-    println!("{:?}", adapter.get_info().backend);
 
     // Create the logical device and command queue
     let (device, queue) = adapter
@@ -177,6 +164,7 @@ async fn lol(event_loop: EventLoop<()>, window: Window){
                 queue.submit(Some(encoder.finish()));
                 frame.present();
             }
+
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
