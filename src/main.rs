@@ -50,7 +50,7 @@ async fn run() {
             } => {
                 gfx.resize(size);
             }
-            Event::RedrawRequested(window_id) if window_id == gfx.window.id() => {
+            Event::RedrawRequested(window_id) if window_id == gfx.window().id() => {
                 gfx.update();
                 match gfx.render() {
                     Ok(_) => {}
@@ -78,7 +78,7 @@ async fn run() {
                 *control_flow = ControlFlow::Exit;
             }
             Event::MainEventsCleared => {
-                gfx.window.request_redraw();
+                gfx.window().request_redraw();
             }
             _ => {}
         }
