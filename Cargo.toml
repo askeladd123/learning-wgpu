@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 winit = "0.28.1"
+bytemuck = { version = "1.12", features = [ "derive" ] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wgpu = { version = "0.15.0", features = ["webgl"] }
