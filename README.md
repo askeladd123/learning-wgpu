@@ -1,11 +1,11 @@
-# Pathfinding
+# Learning wgpu
 I just started this project. Not much to see.
 
 You can try this application online by just clicking the link below.
 
 ---
 ## run web
-Click this [link](https://askeladd123.github.io/pathfinding-wgpu/).
+Click this [link](https://askeladd123.github.io/learning-wgpu/).
 
 ## run native
 maybe I will provide binaries one day, who knows...
