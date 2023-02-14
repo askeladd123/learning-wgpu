@@ -16,7 +16,7 @@ You will need the [rust toolkit](https://www.rust-lang.org/tools/install).
 ## build web
 To build web ready files, you can use a build script *build-wasm*. 
  - run `git submodule update --init --recursive`, beacause *git submodules* is not cool
- - run `cargo build-web --release`. The new files will be in the new `dist` folder.
+ - run `cargo build-wasm --release`. The new files will be in the new `dist` folder.
     - this is possible because of a cargo alias
 
 ### alternatives
