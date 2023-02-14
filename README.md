@@ -30,6 +30,7 @@ You will need:
 - wasm32-unknown-unknown target
 - wasm-bindgen cli
 
+### use built files
 To run the built web files I recommend these for hosting http server:
 - [npm http-server](https://www.npmjs.com/package/http-server)
 - [python http.server](https://docs.python.org/3/library/http.server.html)
