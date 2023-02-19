@@ -16,7 +16,7 @@ You will need the [rust toolkit](https://www.rust-lang.org/tools/install).
 ## build web
 To build web ready files, you can run `cargo build-web`. 
 
-The built files will be in the `dist` folder, ready to be used. This command is possible because of a alias in *.cargo/config.toml*. 
+The built files will be in the *dist* folder, ready to be used. This command is possible because of a alias in *.cargo/config.toml*. 
 
 ### alternatives
 You can build manually with:
