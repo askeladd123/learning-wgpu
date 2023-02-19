@@ -4,6 +4,7 @@ on:
     paths:
      - 'src/**'
      - 'Cargo.toml'
+     - 'build-web/**'
 permissions:
   contents: write
 jobs:
