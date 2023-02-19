@@ -10,14 +10,13 @@ Click this [link](https://askeladd123.github.io/learning-wgpu/).
 ---
 ## run native
 You can simply do `cargo run --release`.
-> tested on windows and linux
-
 You will need the [rust toolkit](https://www.rust-lang.org/tools/install).
+> **Warning**: crashes on some windows devices because of a *wgpu v0.15.1* bug
 
 ## build web
 To build web ready files, you can use a build script *build-wasm*. 
  - run `git submodule update --init --recursive`, beacause *git submodules* is not cool
- - run `cargo build-web --release`. The new files will be in the new `dist` folder.
+ - run `cargo build-wasm --release`. The new files will be in the new `dist` folder.
     - this is possible because of a cargo alias
 
 ### alternatives
@@ -30,6 +29,7 @@ You will need:
 - wasm32-unknown-unknown target
 - wasm-bindgen cli
 
+### use built files
 To run the built web files I recommend these for hosting http server:
 - [npm http-server](https://www.npmjs.com/package/http-server)
 - [python http.server](https://docs.python.org/3/library/http.server.html)
