@@ -1,3 +1,0 @@
-[submodule "build-wasm"]
-	path = build-wasm
-	url = https://github.com/askeladd123/build-wasm.git

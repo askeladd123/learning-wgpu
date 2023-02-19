@@ -1,2 +1,2 @@
 [alias]
-build-wasm = "run --manifest-path build-wasm/Cargo.toml --"
+build-web = "run --manifest-path build-web/Cargo.toml --"

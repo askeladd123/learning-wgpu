@@ -1,5 +1,5 @@
 [package]
-name = "pathfinding-wgpu"
+name = "learning-wgpu"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,13 +7,13 @@ edition = "2021"
 winit = "0.28.1"
 bytemuck = { version = "1.12", features = [ "derive" ] }
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wgpu = { version = "0.15.0", features = ["webgl"] }
-wasm-bindgen = "0.2.83"
-console_error_panic_hook = "0.1.7"
-web-sys = { version = "0.3.60", features = ["console"]}
-wasm-bindgen-futures = "0.4.34"
+[target.'cfg(target_arch = "wasm32")'.dependencies] 
+wgpu = { version = "0.15.0", features = ["webgl"] } 
+wasm-bindgen = "0.2.83" 
+console_error_panic_hook = "0.1.7" 
+web-sys = { version = "0.3.60", features = ["console"]} 
+wasm-bindgen-futures = "0.4.34" 
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-wgpu = "0.15.0"
-pollster = "0.2.5"
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies] 
+wgpu = "0.15.0" 
+pollster = "0.2.5" 
