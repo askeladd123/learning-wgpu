@@ -11,7 +11,6 @@ Click this [link](https://askeladd123.github.io/learning-wgpu/).
 ## run native
 You can simply do `cargo run`.
 You will need the [rust toolkit](https://www.rust-lang.org/tools/install).
-> **Warning**: crashes on some windows devices because of a *wgpu v0.15.1* bug
 
 ## build web
 To build web ready files, you can run `cargo build-web`. 
