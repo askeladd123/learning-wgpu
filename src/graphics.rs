@@ -51,7 +51,13 @@ impl State {
     pub async fn new(window: Window) -> Self {
         let size = window.inner_size();
 
+        #[cfg(not(target_os = "windows"))]
         let instance = wgpu::Instance::default();
+        #[cfg(target_os = "windows")]
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::from_bits_truncate(1 << wgpu::Backend::Vulkan as u32),
+            dx12_shader_compiler: Default::default(),
+        });
 
         let surface = unsafe { instance.create_surface(&window) }.unwrap();
 
