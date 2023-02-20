@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-build-wasm = {git = "https://github.com/askeladd123/build-wasm.git"}
+build-wasm = { tag = "v0.1.0", git = "https://github.com/askeladd123/build-wasm.git"}
