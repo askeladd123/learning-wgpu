@@ -132,7 +132,6 @@ impl State {
 
         surface.configure(&device, &config);
 
-        // ny ny ny ny ny ny ny ny ny ny ny ny
         const VERTICES: &[Vertex] = &[
             Vertex {
                 position: [0.0, 0.5, 0.0],
@@ -157,7 +156,6 @@ impl State {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        // ny ny ny ny ny ny ny ny ny ny ny ny
         Self {
             surface,
             device,

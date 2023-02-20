@@ -5,6 +5,7 @@ on:
      - 'src/**'
      - 'Cargo.toml'
      - 'build-web/**'
+     - 'index.html'
 permissions:
   contents: write
 jobs:
