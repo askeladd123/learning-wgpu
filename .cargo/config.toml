@@ -1,2 +1,0 @@
-[alias]
-build-web = "run --manifest-path build-web/Cargo.toml --"
