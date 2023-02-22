@@ -1,8 +1,8 @@
-use std::borrow::Cow;
+use cfg_if::cfg_if;
+use log::{debug, error, info, trace, warn};
 use winit::{
-    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
+    event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::Window,
     window::WindowBuilder,
 };
 
@@ -10,16 +10,20 @@ mod graphics;
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
     pollster::block_on(run());
-
-    #[cfg(target_arch = "wasm32")]
-    {
-        std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-        wasm_bindgen_futures::spawn_local(run());
-    }
+    // todo: do I need wasm_bindgen_futures::spawn_local()? or can wasm functions be async?
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen(start))]
 async fn run() {
+    cfg_if! {
+        if #[cfg(target_arch = "wasm32")]{
+            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+            console_log::init_with_level(log::Level::Trace);
+        } else {
+            env_logger::init();
+        }
+    }
+
     let event_loop = EventLoop::new();
 
     let window = WindowBuilder::new()
