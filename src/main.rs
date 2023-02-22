@@ -77,6 +77,20 @@ async fn run() {
             } => {
                 *control_flow = ControlFlow::Exit;
             }
+            Event::WindowEvent {
+                event:
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                virtual_keycode: Some(VirtualKeyCode::Space),
+                                ..
+                            },
+                        ..
+                    },
+                ..
+            } => {
+                gfx.change(0.1);
+            }
             Event::MainEventsCleared => {
                 gfx.window().request_redraw();
             }

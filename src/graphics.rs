@@ -9,7 +9,7 @@ use winit::{
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
+pub struct Vertex {
     position: [f32; 3],
     color: [f32; 3],
 }
@@ -44,6 +44,7 @@ pub struct State {
     window: Window,
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
+    pub vertex_array: [Vertex; 3],
     pub size: winit::dpi::PhysicalSize<u32>,
 }
 
@@ -125,7 +126,7 @@ impl State {
 
         surface.configure(&device, &config);
 
-        const VERTICES: &[Vertex] = &[
+        let vertex_array = [
             Vertex {
                 position: [0.0, 0.5, 0.0],
                 color: [1.0, 0.0, 0.0],
@@ -140,13 +141,13 @@ impl State {
             },
         ];
 
-        let num_vertices = VERTICES.len() as u32;
+        let num_vertices = vertex_array.len() as u32;
 
         // use wgpu::util::DeviceExt;
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
+            contents: bytemuck::cast_slice(&vertex_array),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         Self {
@@ -159,6 +160,7 @@ impl State {
             window,
             vertex_buffer,
             num_vertices,
+            vertex_array,
         }
     }
 
@@ -181,6 +183,23 @@ impl State {
 
     pub fn update(&mut self) {}
 
+    pub fn change(&mut self, with: f32) {
+        {
+            let x = &mut self.vertex_array[0].position[0];
+            if 1.0 < *x {
+                *x -= 2.0;
+            }
+            *x += with;
+        }
+        {
+            let y = &mut self.vertex_array[2].position[1];
+            if 1.0 < *y {
+                *y -= 2.0;
+            }
+            *y += with * 0.5;
+        }
+    }
+
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let frame = self.surface.get_current_texture()?;
         let view = frame
@@ -196,7 +215,7 @@ impl State {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: true,
                     },
                 })],
@@ -207,6 +226,11 @@ impl State {
             rpass.draw(0..self.num_vertices, 0..1);
         }
 
+        self.queue.write_buffer(
+            &self.vertex_buffer,
+            0,
+            bytemuck::cast_slice(&self.vertex_array),
+        );
         self.queue.submit(Some(encoder.finish()));
         frame.present();
 
