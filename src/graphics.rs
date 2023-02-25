@@ -50,7 +50,7 @@ pub struct State {
     window: Window,
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
-    pub vertex_array: [Vertex; 3],
+    pub vertex_array: [Vertex; 6],
     pub size: winit::dpi::PhysicalSize<u32>,
     instances: Vec<Instance>,
     instance_buffer: wgpu::Buffer,
@@ -135,16 +135,36 @@ impl State {
         surface.configure(&device, &config);
 
         let vertex_array = [
+            // tri w
+            // wn
             Vertex {
-                position: [0.0, 0.5, 0.0],
+                position: [-0.5, 0.5, 0.0],
                 color: [1.0, 0.0, 0.0],
             },
+            // ws
             Vertex {
                 position: [-0.5, -0.5, 0.0],
                 color: [0.0, 1.0, 0.0],
             },
+            // en
+            Vertex {
+                position: [0.5, 0.5, 0.0],
+                color: [0.0, 0.0, 1.0],
+            },
+            // tri e
+            // ws
+            Vertex {
+                position: [-0.5, -0.5, 0.0],
+                color: [1.0, 0.0, 0.0],
+            },
+            // es
             Vertex {
                 position: [0.5, -0.5, 0.0],
+                color: [0.0, 1.0, 0.0],
+            },
+            // en
+            Vertex {
+                position: [0.5, 0.5, 0.0],
                 color: [0.0, 0.0, 1.0],
             },
         ];

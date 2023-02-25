@@ -1,3 +1,4 @@
+#![allow(unused)]
 use cfg_if::cfg_if;
 use log::{debug, error, info, trace, warn};
 use winit::{
