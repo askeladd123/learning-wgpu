@@ -14,6 +14,12 @@ pub struct Vertex {
     color: [f32; 3],
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Instance {
+    color: [f32; 3],
+}
+
 impl Vertex {
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
@@ -46,6 +52,8 @@ pub struct State {
     num_vertices: u32,
     pub vertex_array: [Vertex; 3],
     pub size: winit::dpi::PhysicalSize<u32>,
+    instances: Vec<Instance>,
+    instance_buffer: wgpu::Buffer,
 }
 
 impl State {
@@ -150,6 +158,12 @@ impl State {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
+        let instances = vec![Instance { color: [0f32; 3] }; 12];
+        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("instance buffer"),
+            contents: bytemuck::cast_slice(&instances),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
         Self {
             surface,
             device,
@@ -161,6 +175,8 @@ impl State {
             vertex_buffer,
             num_vertices,
             vertex_array,
+            instances,
+            instance_buffer,
         }
     }
 
@@ -223,7 +239,7 @@ impl State {
             });
             rpass.set_pipeline(&self.render_pipeline);
             rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            rpass.draw(0..self.num_vertices, 0..1);
+            rpass.draw(0..self.num_vertices, 0..12);
         }
 
         self.queue.write_buffer(

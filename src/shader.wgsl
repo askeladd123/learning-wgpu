@@ -13,10 +13,11 @@ struct VertexOutput {
 @vertex
 fn vs_main(
     model: VertexInput,
+    @builtin(instance_index) index: u32,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.color = model.color;
-    out.clip_position = vec4<f32>(model.position, 1.0);
+    out.color = vec3f(model.position.x * 2.0, 1.0 - model.position.y * 2.0, model.position.z);
+    out.clip_position = vec4<f32>(model.position.x + f32(index), model.position.y, model.position.z, 1.0);
     return out;
 }
 
