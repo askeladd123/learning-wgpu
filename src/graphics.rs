@@ -259,7 +259,7 @@ impl State {
             });
             rpass.set_pipeline(&self.render_pipeline);
             rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            rpass.draw(0..self.num_vertices, 0..12);
+            rpass.draw(0..self.num_vertices, 0..32);
         }
 
         self.queue.write_buffer(

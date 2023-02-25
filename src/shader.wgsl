@@ -15,9 +15,22 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     // out.color = vec3f(model.position.x * 2.0, 1.0 - model.position.y * 2.0, model.position.z);
-    out.color = vec3f(model.color);
+    
+    let tiles_x = u32(6);
+    let col = index % tiles_x;
+    let row = index / tiles_x;
+    let x = model.position.x;
+    let y = model.position.y;
+
     out.clip_position = vec4<f32>(
-        (model.position.x + f32(index))*0.25 - 1.0, model.position.y, model.position.z, 1.0);
+        (x + f32(col)*1.25)*0.25 - 0.8,
+        (y - f32(row)*1.25)*0.25 + 0.8,
+        0.0,
+        1.0,
+    );   
+    out.color = vec3f(model.color);
+    // out.clip_position = vec4<f32>(
+        // (model.position.x + f32(index)*1.25)*0.25 - 1.0, model.position.y, model.position.z, 1.0);
     return out;
 }
 
