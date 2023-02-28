@@ -1,3 +1,4 @@
+use bytemuck::bytes_of;
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -11,13 +12,7 @@ use winit::{
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     position: [f32; 3],
-    color: [f32; 3],
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Instance {
-    color: [f32; 3],
+    color: [f32; 3], // todo: don't need this field
 }
 
 impl Vertex {
@@ -41,6 +36,67 @@ impl Vertex {
     }
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct InstanceStrength {
+    value: f32,
+}
+
+impl InstanceStrength {
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+        use std::mem;
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<InstanceStrength>() as wgpu::BufferAddress,
+            // We need to switch from using a step mode of Vertex to Instance
+            // This means that our shaders will only change to use the next
+            // instance when the shader starts processing a new instance
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[wgpu::VertexAttribute {
+                offset: 0,
+                // While our vertex shader only uses locations 0, and 1 now, in later tutorials we'll
+                // be using 2, 3, and 4, for Vertex. We'll start at slot 5 not conflict with them later
+                shader_location: 5,
+                format: wgpu::VertexFormat::Float32,
+            }],
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct InstanceColorRange {
+    high: [f32; 3],
+    low: [f32; 3],
+}
+
+impl InstanceColorRange {
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+        use std::mem;
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<InstanceColorRange>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 6,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                    shader_location: 7,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+            ],
+        }
+    }
+}
+pub struct Uniform {
+    tiles_x: u32,
+    gap: f32,
+    step_size: f32,
+    mouse: [f32; 2],
+    mouse_speed: f32,
+}
 pub struct State {
     surface: wgpu::Surface,
     device: wgpu::Device,
@@ -52,8 +108,11 @@ pub struct State {
     num_vertices: u32,
     pub vertex_array: [Vertex; 6],
     pub size: winit::dpi::PhysicalSize<u32>,
-    instances: Vec<Instance>,
-    instance_buffer: wgpu::Buffer,
+    instances: u32,
+    instances_strength: Vec<InstanceStrength>,
+    instances_color_range: Vec<InstanceColorRange>,
+    instance_buffer_strength: wgpu::Buffer,
+    instance_buffer_color_range: wgpu::Buffer,
 }
 
 impl State {
@@ -109,7 +168,11 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
+                buffers: &[
+                    Vertex::desc(),
+                    InstanceStrength::desc(),
+                    InstanceColorRange::desc(),
+                ],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -178,12 +241,27 @@ impl State {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
-        let instances = vec![Instance { color: [0f32; 3] }; 12];
-        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("instance buffer"),
-            contents: bytemuck::cast_slice(&instances),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+        let instances = 32;
+        let instances_strength = vec![InstanceStrength { value: 1.0 }; instances];
+        let instance_buffer_strength =
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("instance buffer strenght"),
+                contents: bytemuck::cast_slice(&instances_strength),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            });
+        let instances_color_range = vec![
+            InstanceColorRange {
+                high: [0.9, 0.9, 0.9],
+                low: [0.1, 0.1, 0.1],
+            };
+            instances
+        ];
+        let instance_buffer_color_range =
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("instance buffer color range"),
+                contents: bytemuck::cast_slice(&instances_color_range),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            });
         Self {
             surface,
             device,
@@ -195,8 +273,11 @@ impl State {
             vertex_buffer,
             num_vertices,
             vertex_array,
-            instances,
-            instance_buffer,
+            instances: instances as u32,
+            instances_strength,
+            instances_color_range,
+            instance_buffer_strength,
+            instance_buffer_color_range,
         }
     }
 
@@ -234,6 +315,10 @@ impl State {
             }
             *y += with * 0.5;
         }
+        let size = self.instances_strength.len();
+        for (i, v) in self.instances_strength.iter_mut().enumerate() {
+            v.value -= 0.1 * i as f32 / size as f32;
+        }
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -259,13 +344,20 @@ impl State {
             });
             rpass.set_pipeline(&self.render_pipeline);
             rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            rpass.draw(0..self.num_vertices, 0..32);
+            rpass.set_vertex_buffer(1, self.instance_buffer_strength.slice(..));
+            rpass.set_vertex_buffer(2, self.instance_buffer_color_range.slice(..));
+            rpass.draw(0..self.num_vertices, 0..self.instances);
         }
 
         self.queue.write_buffer(
             &self.vertex_buffer,
             0,
             bytemuck::cast_slice(&self.vertex_array),
+        );
+        self.queue.write_buffer(
+            &self.instance_buffer_strength,
+            0,
+            bytemuck::cast_slice(&self.instances_strength),
         );
         self.queue.submit(Some(encoder.finish()));
         frame.present();
