@@ -17,6 +17,17 @@ struct InstanceColorRange{
     @location(7) low: vec3f,
 }
 
+struct UniformTest{
+    tiles_x: u32,
+    gap: f32,
+    margin: f32,
+    speed: f32,
+    mouse_speed: f32,
+    mouse: vec2f,
+}
+@group(0) @binding(0)
+var<uniform> uniform_test: UniformTest;
+
 @vertex
 fn vs_main(
     model: VertexInput,
@@ -43,6 +54,8 @@ fn vs_main(
     out.color.r = smoothstep(instance_color_range.low.r, instance_color_range.high.r, instance_strength.value);
     out.color.g = smoothstep(instance_color_range.low.g, instance_color_range.high.g, instance_strength.value);
     out.color.b = smoothstep(instance_color_range.low.b, instance_color_range.high.b, instance_strength.value);
+    // out.color = vec3f(uniform_test.speed, uniform_test.margin, uniform_test.gap);
+    out.color = vec3f(uniform_test.mouse.x, uniform_test.mouse.y, 0.);
     // out.color = vec3f(model.color);
     // out.clip_position = vec4<f32>(
         // (model.position.x + f32(index)*1.25)*0.25 - 1.0, model.position.y, model.position.z, 1.0);

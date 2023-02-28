@@ -24,7 +24,6 @@ async fn run() {
             env_logger::init();
         }
     }
-
     let event_loop = EventLoop::new();
 
     let window = WindowBuilder::new()
@@ -63,6 +62,15 @@ async fn run() {
                     Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
                     Err(e) => eprintln!("{:?}", e),
                 }
+            }
+            Event::WindowEvent {
+                event: WindowEvent::CursorMoved { position, .. },
+                ..
+            } => {
+                gfx.get_uniform().mouse = [
+                    position.x as f32 / gfx.window().inner_size().width as f32,
+                    position.y as f32 / gfx.window().inner_size().height as f32,
+                ];
             }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,

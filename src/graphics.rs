@@ -1,4 +1,6 @@
+// todo: change fading to happen in compute shader
 use bytemuck::bytes_of;
+use log::{debug, error, info, trace, warn};
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -90,13 +92,35 @@ impl InstanceColorRange {
         }
     }
 }
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Uniform {
-    tiles_x: u32,
-    gap: f32,
-    step_size: f32,
-    mouse: [f32; 2],
-    mouse_speed: f32,
+    pub tiles_x: u32,
+    pub gap: f32,
+    pub margin: f32,
+    pub speed: f32,
+    pub mouse_speed: f32,
+    // apparently uniforms requires 16 byte (4 float) spacing, 
+    // so padding has to be this size, and this location
+    pub _padding: f32, 
+    pub mouse: [f32; 2],
 }
+
+impl Default for Uniform {
+    fn default() -> Self {
+        Self {
+            tiles_x: 6,
+            gap: 0.05,
+            margin: 0.02,
+            speed: 1.0,
+            mouse_speed: 0.0,
+            mouse: [0.; 2],
+            _padding: 0.0,
+        }
+    }
+}
+
 pub struct State {
     surface: wgpu::Surface,
     device: wgpu::Device,
@@ -113,10 +137,14 @@ pub struct State {
     instances_color_range: Vec<InstanceColorRange>,
     instance_buffer_strength: wgpu::Buffer,
     instance_buffer_color_range: wgpu::Buffer,
+    uniform: Uniform,
+    uniform_buffer: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
 }
 
 impl State {
     pub async fn new(window: Window) -> Self {
+        debug!("{}", std::mem::size_of::<Uniform>());
         let size = window.inner_size();
 
         let instance = wgpu::Instance::default();
@@ -153,9 +181,37 @@ impl State {
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
         });
 
+        let uniform = Uniform::default();
+        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("uniform buffer"),
+            contents: bytemuck::cast_slice(&[uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("bind group layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("bind group"),
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[],
+            bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -262,6 +318,7 @@ impl State {
                 contents: bytemuck::cast_slice(&instances_color_range),
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             });
+
         Self {
             surface,
             device,
@@ -278,6 +335,9 @@ impl State {
             instances_color_range,
             instance_buffer_strength,
             instance_buffer_color_range,
+            uniform,
+            uniform_buffer,
+            bind_group,
         }
     }
 
@@ -299,6 +359,10 @@ impl State {
     }
 
     pub fn update(&mut self) {}
+
+    pub fn get_uniform(&mut self) -> &mut Uniform {
+        &mut self.uniform
+    }
 
     pub fn change(&mut self, with: f32) {
         {
@@ -346,6 +410,7 @@ impl State {
             rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             rpass.set_vertex_buffer(1, self.instance_buffer_strength.slice(..));
             rpass.set_vertex_buffer(2, self.instance_buffer_color_range.slice(..));
+            rpass.set_bind_group(0, &self.bind_group, &[]);
             rpass.draw(0..self.num_vertices, 0..self.instances);
         }
 
@@ -359,9 +424,13 @@ impl State {
             0,
             bytemuck::cast_slice(&self.instances_strength),
         );
+        self.queue.write_buffer(
+            &self.uniform_buffer,
+            0,
+            bytemuck::cast_slice(&[self.uniform]),
+        );
         self.queue.submit(Some(encoder.finish()));
         frame.present();
-
         Ok(())
     }
 }
