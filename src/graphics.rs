@@ -1,7 +1,11 @@
 // todo: change fading to happen in compute shader
+// todo: add support for transparancy
+use crate::color::Color;
 use bytemuck::bytes_of;
 use log::{debug, error, info, trace, warn};
 use std::borrow::Cow;
+use std::convert::{From, TryFrom};
+use std::iter::IntoIterator;
 use wgpu::util::DeviceExt;
 use winit::{
     event::{Event, WindowEvent},
@@ -69,6 +73,10 @@ impl InstanceStrength {
 pub struct InstanceColorRange {
     high: [f32; 3],
     low: [f32; 3],
+    // high: Color,
+    // low: Color,
+    // _padding: [f32; 15],
+    // speed: f32,
 }
 
 impl InstanceColorRange {
@@ -101,9 +109,9 @@ pub struct Uniform {
     pub margin: f32,
     pub speed: f32,
     pub mouse_speed: f32,
-    // apparently uniforms requires 16 byte (4 float) spacing, 
-    // so padding has to be this size, and this location
-    pub _padding: f32, 
+    // apparently uniforms requires 16 byte (4 float) spacing,
+    // so padding has to be this size, and this location pub _padding: f32,
+    _padding: f32,
     pub mouse: [f32; 2],
 }
 
@@ -432,5 +440,29 @@ impl State {
         self.queue.submit(Some(encoder.finish()));
         frame.present();
         Ok(())
+    }
+
+    pub fn paint(&mut self, tile: Tile) {
+        todo!()
+    }
+}
+
+pub struct Tile {
+    pub x: u16,
+    pub y: u16,
+    pub high: Color,
+    pub low: Color,
+    pub speed: f32,
+}
+
+impl Tile {
+    pub fn new(x: u16, y: u16) -> Self {
+        Self {
+            x,
+            y,
+            high: Color::WHITE,
+            low: Color::BLACK,
+            speed: 1.0,
+        }
     }
 }

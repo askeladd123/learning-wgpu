@@ -7,7 +7,9 @@ use winit::{
     window::WindowBuilder,
 };
 
+mod color;
 mod graphics;
+
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
     pollster::block_on(run());
@@ -45,6 +47,7 @@ async fn run() {
     }
 
     let mut gfx = graphics::State::new(window).await;
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
         match event {
