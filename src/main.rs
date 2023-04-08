@@ -1,6 +1,7 @@
 #![allow(unused)]
 use cfg_if::cfg_if;
 use log::{debug, error, info, trace, warn};
+use std::default::Default;
 use winit::{
     event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -47,6 +48,39 @@ async fn run() {
     }
 
     let mut gfx = graphics::State::new(window).await;
+
+    gfx.paint(graphics::Tile {
+        x: 1,
+        y: 1,
+        high: color::Color::RED,
+        low: color::Color::BLUE,
+        ..graphics::Tile::default()
+    });
+    gfx.paint(graphics::Tile {
+        x: 2,
+        y: 2,
+        high: color::Color::GREEN,
+        low: color::Color::GREY,
+        ..graphics::Tile::default()
+    });
+
+    gfx.paint(graphics::Tile {
+        x: 3,
+        y: 3,
+        ..graphics::Tile::default()
+    });
+
+    gfx.paint(graphics::Tile {
+        x: 4,
+        y: 4,
+        ..graphics::Tile::default()
+    });
+
+    gfx.paint(graphics::Tile {
+        x: 5,
+        y: 5,
+        ..graphics::Tile::default()
+    });
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -98,14 +132,28 @@ async fn run() {
                     WindowEvent::KeyboardInput {
                         input:
                             KeyboardInput {
-                                virtual_keycode: Some(VirtualKeyCode::Space),
+                                virtual_keycode: Some(VirtualKeyCode::Up),
                                 ..
                             },
                         ..
                     },
                 ..
             } => {
-                gfx.change(0.1);
+                gfx.change(0.05);
+            }
+            Event::WindowEvent {
+                event:
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                virtual_keycode: Some(VirtualKeyCode::Down),
+                                ..
+                            },
+                        ..
+                    },
+                ..
+            } => {
+                gfx.change(-0.05);
             }
             Event::MainEventsCleared => {
                 gfx.window().request_redraw();

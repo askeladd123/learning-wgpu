@@ -51,11 +51,23 @@ fn vs_main(
         1.0,
     );   
 
-    out.color.r = smoothstep(instance_color_range.low.r, instance_color_range.high.r, instance_strength.value);
-    out.color.g = smoothstep(instance_color_range.low.g, instance_color_range.high.g, instance_strength.value);
-    out.color.b = smoothstep(instance_color_range.low.b, instance_color_range.high.b, instance_strength.value);
+    out.color.r = smoothstep(
+        instance_color_range.low.r, 
+        instance_color_range.high.r, 
+        instance_strength.value
+    );
+    out.color.g = smoothstep(
+        instance_color_range.low.g, 
+        instance_color_range.high.g, 
+        instance_strength.value
+    );
+    out.color.b = smoothstep(
+        instance_color_range.low.b, 
+        instance_color_range.high.b, 
+        instance_strength.value
+    );
     // out.color = vec3f(uniform_test.speed, uniform_test.margin, uniform_test.gap);
-    out.color = vec3f(uniform_test.mouse.x, uniform_test.mouse.y, 0.);
+    // out.color = vec3f(uniform_test.mouse.x, uniform_test.mouse.y, 0.);
     // out.color = vec3f(model.color);
     // out.clip_position = vec4<f32>(
         // (model.position.x + f32(index)*1.25)*0.25 - 1.0, model.position.y, model.position.z, 1.0);

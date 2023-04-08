@@ -69,6 +69,36 @@ impl TryFrom<(f32, f32, f32)> for Color {
     }
 }
 
+impl TryFrom<[f32;4]> for Color {
+    type Error = String;
+
+    #[rustfmt::skip]
+    fn try_from(value: [f32;4]) -> Result<Self, Self::Error> {
+        if 
+            1.0 < value[0] || value[0] < 0.0 ||
+            1.0 < value[1] || value[1] < 0.0 ||
+            1.0 < value[2] || value[2] < 0.0 ||
+            1.0 < value[3] || value[3] < 0.0
+        { Err(format!("color has to be 0, 1 or in between, but got colors {value:?}")) } else 
+        { Ok(Color { r: value[0], g: value[1], b: value[2], a: value[3], }) }
+    }
+}
+
+impl TryFrom<[f32;3]> for Color {
+    type Error = String;
+
+    #[rustfmt::skip]
+    fn try_from(value: [f32;3]) -> Result<Self, Self::Error> {
+        if 
+            1.0 < value[0] || value[0] < 0.0 ||
+            1.0 < value[1] || value[1] < 0.0 ||
+            1.0 < value[2] || value[2] < 0.0
+        { Err(format!("color has to be 0, 1 or in between, but got colors {value:?}")) } else 
+        { Ok(Color { r: value[0], g: value[1], b: value[2], a: 1.0, }) }
+    }
+}
+
+
 impl Into<(f32, f32, f32, f32)> for Color{
     fn into(self) -> (f32, f32, f32, f32) {
         (self.r, self.g, self.b, self.a)
@@ -80,6 +110,19 @@ impl Into<(f32, f32, f32)> for Color{
         (self.r, self.g, self.b)
     }
 }
+
+impl Into<[f32; 4]> for Color{
+    fn into(self) -> [f32; 4] {
+        [self.r, self.g, self.b, self.a]
+    }
+}
+
+impl Into<[f32; 3]> for Color{
+    fn into(self) -> [f32; 3] {
+        [self.r, self.g, self.b]
+    }
+}
+
 
 impl Default for Color{
     fn default() -> Self {

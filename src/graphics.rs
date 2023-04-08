@@ -140,7 +140,8 @@ pub struct State {
     num_vertices: u32,
     pub vertex_array: [Vertex; 6],
     pub size: winit::dpi::PhysicalSize<u32>,
-    instances: u32,
+    w: u32,
+    h: u32,
     instances_strength: Vec<InstanceStrength>,
     instances_color_range: Vec<InstanceColorRange>,
     instance_buffer_strength: wgpu::Buffer,
@@ -152,7 +153,6 @@ pub struct State {
 
 impl State {
     pub async fn new(window: Window) -> Self {
-        debug!("{}", std::mem::size_of::<Uniform>());
         let size = window.inner_size();
 
         let instance = wgpu::Instance::default();
@@ -189,7 +189,12 @@ impl State {
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
         });
 
-        let uniform = Uniform::default();
+        let (w, h) = (6, 6);
+        let instances = w * h;
+        let uniform = Uniform {
+            tiles_x: w,
+            ..Uniform::default()
+        };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("uniform buffer"),
             contents: bytemuck::cast_slice(&[uniform]),
@@ -261,7 +266,7 @@ impl State {
 
         surface.configure(&device, &config);
 
-        let vertex_array = [
+        const VERTEX_ARRAY: [Vertex; 6] = [
             // tri w
             // wn
             Vertex {
@@ -296,17 +301,16 @@ impl State {
             },
         ];
 
-        let num_vertices = vertex_array.len() as u32;
+        let num_vertices = VERTEX_ARRAY.len() as u32;
 
         // use wgpu::util::DeviceExt;
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vertex_array),
+            contents: bytemuck::cast_slice(&VERTEX_ARRAY),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
-        let instances = 32;
-        let instances_strength = vec![InstanceStrength { value: 1.0 }; instances];
+        let instances_strength = vec![InstanceStrength { value: 1.0 }; instances as usize];
         let instance_buffer_strength =
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("instance buffer strenght"),
@@ -318,7 +322,7 @@ impl State {
                 high: [0.9, 0.9, 0.9],
                 low: [0.1, 0.1, 0.1],
             };
-            instances
+            instances as usize
         ];
         let instance_buffer_color_range =
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -337,8 +341,9 @@ impl State {
             window,
             vertex_buffer,
             num_vertices,
-            vertex_array,
-            instances: instances as u32,
+            vertex_array: VERTEX_ARRAY,
+            w,
+            h,
             instances_strength,
             instances_color_range,
             instance_buffer_strength,
@@ -373,23 +378,26 @@ impl State {
     }
 
     pub fn change(&mut self, with: f32) {
-        {
-            let x = &mut self.vertex_array[0].position[0];
-            if 1.0 < *x {
-                *x -= 2.0;
-            }
-            *x += with;
-        }
-        {
-            let y = &mut self.vertex_array[2].position[1];
-            if 1.0 < *y {
-                *y -= 2.0;
-            }
-            *y += with * 0.5;
-        }
-        let size = self.instances_strength.len();
-        for (i, v) in self.instances_strength.iter_mut().enumerate() {
-            v.value -= 0.1 * i as f32 / size as f32;
+        // {
+        //     let x = &mut self.vertex_array[0].position[0];
+        //     if 1.0 < *x {
+        //         *x -= 2.0;
+        //     }
+        //     *x += with;
+        // }
+        // {
+        //     let y = &mut self.vertex_array[2].position[1];
+        //     if 1.0 < *y {
+        //         *y -= 2.0;
+        //     }
+        //     *y += with * 0.5;
+        // }
+        // let size = self.instances_strength.len();
+        // for (i, v) in self.instances_strength.iter_mut().enumerate() {
+        //     v.value -= 0.1 * i as f32 / size as f32;
+        // }
+        for tile in self.instances_strength.iter_mut() {
+            tile.value -= with;
         }
     }
 
@@ -419,7 +427,7 @@ impl State {
             rpass.set_vertex_buffer(1, self.instance_buffer_strength.slice(..));
             rpass.set_vertex_buffer(2, self.instance_buffer_color_range.slice(..));
             rpass.set_bind_group(0, &self.bind_group, &[]);
-            rpass.draw(0..self.num_vertices, 0..self.instances);
+            rpass.draw(0..self.num_vertices, 0..(self.w * self.h));
         }
 
         self.queue.write_buffer(
@@ -437,29 +445,55 @@ impl State {
             0,
             bytemuck::cast_slice(&[self.uniform]),
         );
+        self.queue.write_buffer(
+            &self.instance_buffer_color_range,
+            0,
+            bytemuck::cast_slice(&self.instances_color_range),
+        );
         self.queue.submit(Some(encoder.finish()));
         frame.present();
         Ok(())
     }
 
+    /// panics if tile is out of bounds
     pub fn paint(&mut self, tile: Tile) {
-        todo!()
+        if self.w <= tile.x || self.h <= tile.y {
+            // dbg!(self.uniform.tiles_x, self.instances_color_range.len());
+            panic!("tile provided was out of bounds, \n\twidth: {}, tile.x: {}\n\theight: {}, tile.y: {}", self.w, tile.x, self.h, tile.y);
+        }
+
+        let mut i: &mut InstanceColorRange =
+            &mut self.instances_color_range[(tile.x + tile.y * self.w) as usize];
+        i.high = tile.high.into();
+        i.low = tile.low.into();
     }
 }
 
 pub struct Tile {
-    pub x: u16,
-    pub y: u16,
+    pub x: u32,
+    pub y: u32,
     pub high: Color,
     pub low: Color,
     pub speed: f32,
 }
 
 impl Tile {
-    pub fn new(x: u16, y: u16) -> Self {
+    pub fn new(x: u32, y: u32) -> Self {
         Self {
             x,
             y,
+            high: Color::WHITE,
+            low: Color::BLACK,
+            speed: 1.0,
+        }
+    }
+}
+
+impl Default for Tile {
+    fn default() -> Self {
+        Self {
+            x: 0,
+            y: 0,
             high: Color::WHITE,
             low: Color::BLACK,
             speed: 1.0,
