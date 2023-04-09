@@ -1,3 +1,5 @@
+// todo: tiles start white
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) color: vec3<f32>,
@@ -38,38 +40,29 @@ fn vs_main(
     var out: VertexOutput;
     // out.color = vec3f(model.position.x * 2.0, 1.0 - model.position.y * 2.0, model.position.z);
     
-    // todo: this cannot be hardcoded
-    let tiles_x = u32(6);
-    let col = index % tiles_x;
-    let row = index / tiles_x;
+    // todo: this should not be hardcoded
+    let col = index % uniform_test.tiles_x;
+    let row = index / uniform_test.tiles_x;
     let x = model.position.x;
     let y = model.position.y;
 
+    let SCALE_LEFT_CORNER = 0.8;
+    let GAP = 1.25;
+    let SCALE_CENTER = 0.25;
     out.clip_position = vec4<f32>(
-        (x + f32(col)*1.25)*0.25 - 0.8,
-        (y - f32(row)*1.25)*0.25 + 0.8,
+        (x + f32(col)*GAP)*SCALE_CENTER - SCALE_LEFT_CORNER,
+        (y - f32(row)*GAP)*SCALE_CENTER + SCALE_LEFT_CORNER,
         0.0,
         1.0,
     );   
 
-    out.color = smoothstep(instance_color_range.low, instance_color_range.high, 
-    vec3<f32>(
-        instance_strength.value,
-        instance_strength.value,
-        instance_strength.value,
-    ));
-
+    // todo: low and high has opposite meaning in my code
     out.color = smoothstep(
-        vec3<f32>(1.0, 1.0, 1.0),
-        vec3<f32>(0.0, 0.0, 0.0),
-        vec3<f32>(
-            instance_strength.value,
-            instance_strength.value,
-            instance_strength.value,
-        )
+        instance_color_range.high + vec3(0.01), 
+        instance_color_range.low,
+        vec3(instance_strength.value)
     );
-
-    
+ 
     return out;
 }
 

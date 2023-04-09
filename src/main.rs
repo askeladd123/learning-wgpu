@@ -12,6 +12,10 @@ use winit::{
 mod color;
 mod graphics;
 
+// web uses requestAnimationFrame with default 60 fps
+const FPS_TARGET_NATIVE: u64 = 60;
+const FRAMETIME_TARGET_NATIVE: u64 = 1000 / 60;
+
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
     pollster::block_on(run());
@@ -137,7 +141,7 @@ async fn run() {
                 }
 
                 #[cfg(not(target_arch = "wasm32"))]
-                spin_sleep::sleep(Duration::from_millis(17));
+                spin_sleep::sleep(Duration::from_millis(FRAMETIME_TARGET_NATIVE));
             }
             _ => {}
         }
