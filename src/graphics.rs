@@ -310,7 +310,7 @@ impl State {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
-        let instances_strength = vec![InstanceStrength { value: 1.0 }; instances as usize];
+        let instances_strength = vec![InstanceStrength { value: 0.0 }; instances as usize];
         let instance_buffer_strength =
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("instance buffer strenght"),
@@ -371,7 +371,11 @@ impl State {
         false
     }
 
-    pub fn update(&mut self) {}
+    pub fn update(&mut self) {
+        for tile in self.instances_strength.iter_mut() {
+            tile.value += 0.01;
+        }
+    }
 
     pub fn get_uniform(&mut self) -> &mut Uniform {
         &mut self.uniform
@@ -462,10 +466,11 @@ impl State {
             panic!("tile provided was out of bounds, \n\twidth: {}, tile.x: {}\n\theight: {}, tile.y: {}", self.w, tile.x, self.h, tile.y);
         }
 
-        let mut i: &mut InstanceColorRange =
-            &mut self.instances_color_range[(tile.x + tile.y * self.w) as usize];
+        let index = (tile.x + tile.y * self.w) as usize;
+        let mut i: &mut InstanceColorRange = &mut self.instances_color_range[index];
         i.high = tile.high.into();
         i.low = tile.low.into();
+        self.instances_strength[index].value = 0.0;
     }
 }
 

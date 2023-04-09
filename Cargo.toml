@@ -8,6 +8,8 @@ winit = "0.28.1"
 bytemuck = { version = "1.12", features = [ "derive" ] }
 log = "0.4.17"
 cfg-if = "1.0.0"
+spin_sleep = "1.1.1"
+rand = "0.8.5"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies] 
 wgpu = {git = "https://github.com/gfx-rs/wgpu.git", rev = "0590a1c", features = ["webgl"]}
@@ -16,9 +18,12 @@ wasm-bindgen-futures = "0.4.34"
 web-sys = "0.3.60"
 console_error_panic_hook = "0.1.7" 
 console_log = {version = "0.2.0", features = ["color"]}
+getrandom = { version = "0.2", features = ["js"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies] 
 wgpu = {git = "https://github.com/gfx-rs/wgpu.git", rev = "0590a1c"}
 pollster = "0.3.0"
 env_logger = "0.10.0"
+
+
  

@@ -1,7 +1,8 @@
 #![allow(unused)]
 use cfg_if::cfg_if;
+use color::Color;
 use log::{debug, error, info, trace, warn};
-use std::default::Default;
+use std::{default::Default, time::Duration};
 use winit::{
     event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -49,56 +50,14 @@ async fn run() {
 
     let mut gfx = graphics::State::new(window).await;
 
-    gfx.paint(graphics::Tile {
-        x: 1,
-        y: 1,
-        high: color::Color::RED,
-        low: color::Color::BLUE,
-        ..graphics::Tile::default()
-    });
-    gfx.paint(graphics::Tile {
-        x: 2,
-        y: 2,
-        high: color::Color::GREEN,
-        low: color::Color::GREY,
-        ..graphics::Tile::default()
-    });
-
-    gfx.paint(graphics::Tile {
-        x: 3,
-        y: 3,
-        ..graphics::Tile::default()
-    });
-
-    gfx.paint(graphics::Tile {
-        x: 4,
-        y: 4,
-        ..graphics::Tile::default()
-    });
-
-    gfx.paint(graphics::Tile {
-        x: 5,
-        y: 5,
-        ..graphics::Tile::default()
-    });
-
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
+        *control_flow = ControlFlow::Poll;
         match event {
             Event::WindowEvent {
                 event: WindowEvent::Resized(size),
                 ..
             } => {
                 gfx.resize(size);
-            }
-            Event::RedrawRequested(window_id) if window_id == gfx.window().id() => {
-                gfx.update();
-                match gfx.render() {
-                    Ok(_) => {}
-                    Err(wgpu::SurfaceError::Lost) => gfx.resize(gfx.size),
-                    Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                    Err(e) => eprintln!("{:?}", e),
-                }
             }
             Event::WindowEvent {
                 event: WindowEvent::CursorMoved { position, .. },
@@ -127,36 +86,58 @@ async fn run() {
             } => {
                 *control_flow = ControlFlow::Exit;
             }
-            Event::WindowEvent {
-                event:
-                    WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                virtual_keycode: Some(VirtualKeyCode::Up),
-                                ..
-                            },
-                        ..
-                    },
-                ..
-            } => {
-                gfx.change(0.05);
-            }
-            Event::WindowEvent {
-                event:
-                    WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                virtual_keycode: Some(VirtualKeyCode::Down),
-                                ..
-                            },
-                        ..
-                    },
-                ..
-            } => {
-                gfx.change(-0.05);
-            }
+            // Event::WindowEvent {
+            //     event:
+            //         WindowEvent::KeyboardInput {
+            //             input:
+            //                 KeyboardInput {
+            //                     virtual_keycode: Some(VirtualKeyCode::Up),
+            //                     ..
+            //                 },
+            //             ..
+            //         },
+            //     ..
+            // } => {
+            //     gfx.change(0.05);
+            // }
+            // Event::WindowEvent {
+            //     event:
+            //         WindowEvent::KeyboardInput {
+            //             input:
+            //                 KeyboardInput {
+            //                     virtual_keycode: Some(VirtualKeyCode::Down),
+            //                     ..
+            //                 },
+            //             ..
+            //         },
+            //     ..
+            // } => {
+            //     gfx.change(-0.05);
+            // }
             Event::MainEventsCleared => {
-                gfx.window().request_redraw();
+                use rand::Rng;
+                let mut rng = rand::thread_rng();
+                if rng.gen_bool(0.2) {
+                    use graphics::Tile;
+                    gfx.paint(Tile {
+                        x: rng.gen_range(0..6),
+                        y: rng.gen_range(0..6),
+                        high: Color::RED,
+                        low: Color::BLACK,
+                        ..Tile::default()
+                    })
+                }
+
+                gfx.update();
+                match gfx.render() {
+                    Ok(_) => {}
+                    Err(wgpu::SurfaceError::Lost) => gfx.resize(gfx.size),
+                    Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                    Err(e) => eprintln!("{:?}", e),
+                }
+
+                #[cfg(not(target_arch = "wasm32"))]
+                spin_sleep::sleep(Duration::from_millis(17));
             }
             _ => {}
         }
