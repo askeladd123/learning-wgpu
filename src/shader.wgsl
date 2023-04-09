@@ -59,10 +59,14 @@ fn vs_main(
         instance_strength.value,
     ));
 
-    out.color =     vec3<f32>(
-        instance_strength.value,
-        instance_strength.value,
-        instance_strength.value,
+    out.color = smoothstep(
+        vec3<f32>(1.0, 1.0, 1.0),
+        vec3<f32>(0.0, 0.0, 0.0),
+        vec3<f32>(
+            instance_strength.value,
+            instance_strength.value,
+            instance_strength.value,
+        )
     );
 
     
