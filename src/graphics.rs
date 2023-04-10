@@ -189,7 +189,7 @@ impl State {
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
         });
 
-        let (w, h) = (6, 6);
+        let (w, h) = (32, 32);
         let instances = w * h;
         let uniform = Uniform {
             tiles_x: w,
@@ -471,6 +471,13 @@ impl State {
         i.high = tile.high.into();
         i.low = tile.low.into();
         self.instances_strength[index].value = 0.0;
+    }
+
+    pub fn tiles_w(&self) -> u32 {
+        self.w
+    }
+    pub fn tiles_h(&self) -> u32 {
+        self.h
     }
 }
 

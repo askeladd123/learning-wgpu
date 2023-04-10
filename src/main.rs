@@ -121,13 +121,13 @@ async fn run() {
             Event::MainEventsCleared => {
                 use rand::Rng;
                 let mut rng = rand::thread_rng();
-                if rng.gen_bool(0.2) {
+                if rng.gen_bool(0.75) {
                     use graphics::Tile;
                     gfx.paint(Tile {
-                        x: rng.gen_range(0..6),
-                        y: rng.gen_range(0..6),
+                        x: rng.gen_range(0..gfx.tiles_w()),
+                        y: rng.gen_range(0..gfx.tiles_h()),
                         high: Color::RED,
-                        low: Color::BLACK,
+                        low: Color::GREEN,
                         ..Tile::default()
                     })
                 }
