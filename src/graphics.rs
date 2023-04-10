@@ -189,7 +189,7 @@ impl State {
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
         });
 
-        let (w, h) = (32, 32);
+        let (w, h) = (128, 128);
         let instances = w * h;
         let uniform = Uniform {
             tiles_x: w,

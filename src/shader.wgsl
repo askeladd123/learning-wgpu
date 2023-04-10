@@ -27,6 +27,21 @@ struct UniformTest{
     mouse_speed: f32,
     mouse: vec2f,
 }
+
+// struct Settings{
+//     tiles_x: u32,
+//     tiles_y: u32,
+//     bleed_speed: f32,
+//     mouse_speed: f32,
+//     mouse: vec2f,
+// }
+
+// struct InstanceColorRange{
+//     high: vec4f,
+//     low: vec4f,
+//     bleed_speed: f32,
+// }
+
 @group(0) @binding(0)
 var<uniform> uniform_test: UniformTest;
 
