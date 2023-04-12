@@ -14,6 +14,7 @@ use winit::{
 mod color;
 mod graphics;
 mod maze;
+mod models;
 mod search;
 
 // web uses requestAnimationFrame with default 60 fps
@@ -25,16 +26,31 @@ const FRAMETIME_TARGET_NATIVE: u64 = 1000 / 60;
 struct MazeTest {
     rooms: Vec<Room>,
     w: usize,
+    home: (usize, usize),
+    goal: (usize, usize),
 }
 
 impl Default for MazeTest {
     fn default() -> Self {
         let w = 128;
-        let mut rooms = vec![Room::Empty; 128 * 128];
-        rooms[69] = Room::Home;
-        rooms[1000] = Room::Goal;
+        let mut maze = Self {
+            rooms: vec![Room::Empty; w * 128],
+            w,
+            home: (2, 12),
+            goal: (10, 12),
+        };
 
-        Self { w, rooms }
+        maze.set(maze.goal.0, maze.goal.1, Room::Goal(0));
+        maze.set(maze.home.0, maze.home.1, Room::Home(0));
+
+        maze
+    }
+}
+
+impl MazeTest {
+    /// panics if out of bounds
+    fn set(&mut self, x: usize, y: usize, value: Room) {
+        self.rooms[y * self.w + x] = value;
     }
 }
 
@@ -43,7 +59,7 @@ impl Maze for MazeTest {
         if x < 0 || y < 0 {
             return Room::Wall;
         }
-        match self.rooms.get(x as usize * self.w + y as usize) {
+        match self.rooms.get(y as usize * self.w + x as usize) {
             Some(v) => *v,
             None => Room::Wall,
         }
@@ -93,8 +109,8 @@ async fn run() {
     let mut gfx = graphics::State::new(window).await;
     for (i, room) in maze.rooms.iter().enumerate() {
         let color = match room {
-            Room::Home => Color::RED,
-            Room::Goal => Color::GREEN,
+            Room::Home(_) => Color::RED,
+            Room::Goal(_) => Color::GREEN,
             Room::Wall => Color::GREY,
             _ => continue,
         };
@@ -109,7 +125,8 @@ async fn run() {
         });
     }
 
-    let mut bfs = search::BFS::new((69, 0));
+    let mut bfs = search::BFS::new(maze.home);
+    let mut found = false;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -189,15 +206,28 @@ async fn run() {
                 //         ..Tile::default()
                 //     })
                 // }
-                match bfs.step_goal(&maze) {
-                    Some(v) => gfx.paint(graphics::Tile {
-                        x: v.0 as u32,
-                        y: v.1 as u32,
-                        low: Color::WHITE,
-                        ..graphics::Tile::default()
-                    }),
-                    None => {}
-                };
+                if !found {
+                    match bfs.step_goal(&maze) {
+                        Some(v) => gfx.paint(graphics::Tile {
+                            x: v.0 as u32,
+                            y: v.1 as u32,
+                            high: Color::WHITE,
+                            ..graphics::Tile::default()
+                        }),
+                        None => found = true,
+                    };
+                } else {
+                    match bfs.step_home() {
+                        Some(v) => gfx.paint(graphics::Tile {
+                            x: v.0 as u32,
+                            y: v.0 as u32,
+                            high: Color::WHITE,
+                            ..graphics::Tile::default()
+                        }),
+                        None => found = false,
+                    }
+                }
+                // bfs.debug(&mut gfx);
 
                 gfx.update();
                 match gfx.render() {

@@ -1,5 +1,5 @@
 use crate::maze::*;
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 
 pub const UP: (i8, i8) = (0, 1);
 pub const DOWN: (i8, i8) = (0, -1);
@@ -56,21 +56,36 @@ impl TryFrom<(i8, i8)> for Direction {
 pub trait StepSearch {
     fn step_goal<T: Maze>(&mut self, maze: &T) -> Option<(usize, usize)>;
 
-    fn step_home<T: Maze>(&mut self, maze: &T) -> Option<(usize, usize)>;
+    fn step_home(&mut self) -> Option<(usize, usize)>;
 }
 
 pub struct BFS {
-    searched: HashSet<(usize, usize)>,
+    searched: HashMap<(usize, usize), (usize, usize)>,
     edges: VecDeque<(usize, usize)>,
-    current: usize,
+    current: (usize, usize),
+    home: (usize, usize),
 }
 
 impl BFS {
     pub fn new(home: (usize, usize)) -> Self {
         Self {
-            current: 0,
-            searched: HashSet::new(),
+            current: (0, 0),
+            searched: HashMap::new(),
             edges: VecDeque::from([home]),
+            home,
+        }
+    }
+
+    pub fn debug(&self, gfx: &mut crate::graphics::State) {
+        use crate::color::*;
+        use crate::graphics::*;
+        for (k, v) in self.searched.iter() {
+            gfx.paint(Tile {
+                x: v.0 as u32,
+                y: v.1 as u32,
+                high: Color::BLUE,
+                ..Tile::default()
+            });
         }
     }
 }
@@ -85,24 +100,33 @@ impl StepSearch for BFS {
             .into_iter()
             .map(|v| (e.0 as isize + v.0 as isize, e.1 as isize + v.1 as isize))
         {
-            if self.searched.contains(&(n.0 as usize, n.1 as usize)) {
+            if self.searched.contains_key(&(n.0 as usize, n.1 as usize)) {
                 continue;
             }
 
             match maze.get(n.0, n.1) {
                 Room::Empty => {
-                    self.searched.insert((n.0 as usize, n.1 as usize));
+                    self.searched.insert((n.0 as usize, n.1 as usize), e);
                     self.edges.push_back((n.0 as usize, n.1 as usize));
                 }
-                Room::Goal => return None,
-                Room::Home | Room::Wall => {}
+                Room::Goal(_) => {
+                    self.current = e;
+                    return None;
+                }
+                Room::Home(_) | Room::Wall => {}
             }
         }
 
         Some(e)
     }
 
-    fn step_home<T: Maze>(&mut self, maze: &T) -> Option<(usize, usize)> {
-        todo!()
+    fn step_home(&mut self) -> Option<(usize, usize)> {
+        let child = self.searched[&self.current];
+        if child == self.home {
+            return None;
+        }
+
+        self.current = child;
+        Some(self.current)
     }
 }

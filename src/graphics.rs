@@ -13,7 +13,6 @@ use winit::{
     window::Window,
     window::WindowBuilder,
 };
-
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
@@ -38,6 +37,15 @@ impl Vertex {
                     format: wgpu::VertexFormat::Float32x3,
                 },
             ],
+        }
+    }
+}
+
+impl From<(f32, f32)> for Vertex {
+    fn from(value: (f32, f32)) -> Self {
+        Self {
+            position: [value.0, value.1, 0.],
+            color: [0.; 3],
         }
     }
 }
@@ -138,7 +146,8 @@ pub struct State {
     window: Window,
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
-    pub vertex_array: [Vertex; 6],
+    // pub vertex_array: [Vertex; 6],
+    pub vertex_array: Vec<Vertex>,
     pub size: winit::dpi::PhysicalSize<u32>,
     w: u32,
     h: u32,
@@ -301,12 +310,17 @@ impl State {
             },
         ];
 
-        let num_vertices = VERTEX_ARRAY.len() as u32;
+        let vertex_array: Vec<Vertex> = crate::models::CIRCLE
+            .into_iter()
+            .map(|v| v.into())
+            .collect();
+
+        let num_vertices = vertex_array.len() as u32;
 
         // use wgpu::util::DeviceExt;
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&VERTEX_ARRAY),
+            contents: bytemuck::cast_slice(&vertex_array),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -341,7 +355,7 @@ impl State {
             window,
             vertex_buffer,
             num_vertices,
-            vertex_array: VERTEX_ARRAY,
+            vertex_array,
             w,
             h,
             instances_strength,

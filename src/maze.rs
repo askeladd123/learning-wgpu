@@ -2,8 +2,8 @@
 pub enum Room {
     Empty,
     Wall,
-    Home,
-    Goal,
+    Home(u16),
+    Goal(u16),
 }
 
 pub trait Maze {
