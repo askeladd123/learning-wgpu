@@ -1,21 +1,20 @@
 # Learning wgpu
-I just started this project. Not much to see.
+This is a visualization of different searching algrithms. You can try it by clicking [here](https://askeladd123.github.io/learning-wgpu/).
 
-You can try this application online by just clicking the link below.
+I made this for learning graphics programming, and the [webgpu standard](https://www.w3.org/TR/webgpu/).
 
----
-## run web
-Click this [link](https://askeladd123.github.io/learning-wgpu/).
+## build from source
+The program runs both on the web, and as a native application. Clone the repo, and make sure you have the [rust toolkit](https://www.rust-lang.org/tools/install) installed.
 
----
-## run native
-You can simply do `cargo run`.
-You will need the [rust toolkit](https://www.rust-lang.org/tools/install).
+### native
+To build and run as a native application simply do `cargo run`.
 
-## build web
+## web
 To build web ready files, you can run `cargo build-web`. 
 
 The built files will be in the *dist* folder, ready to be used. This command is possible because of a alias in *.cargo/config.toml*. 
+
+To run on the web see *use built files* below.
 
 ### alternatives
 You can build manually with:
