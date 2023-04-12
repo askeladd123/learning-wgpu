@@ -1,5 +1,5 @@
 # Learning wgpu
-This is a visualization of different searching algrithms. You can try it by clicking [here](https://askeladd123.github.io/learning-wgpu/).
+This is a program that visualizes different searching algrithms. You can try it by clicking [here](https://askeladd123.github.io/learning-wgpu/).
 
 I made this for learning graphics programming, and the [webgpu standard](https://www.w3.org/TR/webgpu/).
 
@@ -12,7 +12,7 @@ To build and run as a native application simply do `cargo run`.
 ## web
 To build web ready files, you can run `cargo build-web`. 
 
-The built files will be in the *dist* folder, ready to be used. This command is possible because of a alias in *.cargo/config.toml*. 
+The built files will be in the *dist* folder, ready to be used. This command is possible because of an alias in *.cargo/config.toml*. 
 
 To run on the web see *use built files* below.
 
