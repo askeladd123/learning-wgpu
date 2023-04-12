@@ -2,6 +2,8 @@
 use cfg_if::cfg_if;
 use color::Color;
 use log::{debug, error, info, trace, warn};
+use maze::*;
+use search::*;
 use std::{default::Default, time::Duration};
 use winit::{
     event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -11,10 +13,43 @@ use winit::{
 
 mod color;
 mod graphics;
+mod maze;
+mod search;
 
 // web uses requestAnimationFrame with default 60 fps
 const FPS_TARGET_NATIVE: u64 = 60;
 const FRAMETIME_TARGET_NATIVE: u64 = 1000 / 60;
+
+// maze maze maze maze
+
+struct MazeTest {
+    rooms: Vec<Room>,
+    w: usize,
+}
+
+impl Default for MazeTest {
+    fn default() -> Self {
+        let w = 128;
+        let mut rooms = vec![Room::Empty; 128 * 128];
+        rooms[69] = Room::Home;
+        rooms[1000] = Room::Goal;
+
+        Self { w, rooms }
+    }
+}
+
+impl Maze for MazeTest {
+    fn get(&self, x: isize, y: isize) -> Room {
+        if x < 0 || y < 0 {
+            return Room::Wall;
+        }
+        match self.rooms.get(x as usize * self.w + y as usize) {
+            Some(v) => *v,
+            None => Room::Wall,
+        }
+    }
+}
+// maze maze maze maze
 
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
@@ -52,7 +87,29 @@ async fn run() {
             .expect("couldn't append canvas to document body");
     }
 
+    let mut rng = rand::thread_rng();
+
+    let maze = MazeTest::default();
     let mut gfx = graphics::State::new(window).await;
+    for (i, room) in maze.rooms.iter().enumerate() {
+        let color = match room {
+            Room::Home => Color::RED,
+            Room::Goal => Color::GREEN,
+            Room::Wall => Color::GREY,
+            _ => continue,
+        };
+        const D: f32 = 0.9;
+        let darker = (color.r * D, color.g * D, color.b * D).try_into().unwrap();
+        gfx.paint(graphics::Tile {
+            x: (i % maze.w) as u32,
+            y: (i / maze.w) as u32,
+            low: color,
+            high: darker,
+            ..graphics::Tile::default()
+        });
+    }
+
+    let mut bfs = search::BFS::new((69, 0));
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -67,10 +124,11 @@ async fn run() {
                 event: WindowEvent::CursorMoved { position, .. },
                 ..
             } => {
-                gfx.get_uniform().mouse = [
-                    position.x as f32 / gfx.window().inner_size().width as f32,
-                    position.y as f32 / gfx.window().inner_size().height as f32,
-                ];
+                // gfx.get_uniform().mouse = [
+                //     position.x as f32 / gfx.window().inner_size().width as f32,
+                //     position.y as f32 / gfx.window().inner_size().height as f32,
+                //     a,
+                // ];
             }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
@@ -119,18 +177,27 @@ async fn run() {
             //     gfx.change(-0.05);
             // }
             Event::MainEventsCleared => {
-                use rand::Rng;
-                let mut rng = rand::thread_rng();
-                if rng.gen_bool(0.9) {
-                    use graphics::Tile;
-                    gfx.paint(Tile {
-                        x: rng.gen_range(0..gfx.tiles_w()),
-                        y: rng.gen_range(0..gfx.tiles_h()),
-                        high: Color::WHITE,
-                        low: Color::BLACK,
-                        ..Tile::default()
-                    })
-                }
+                // use rand::Rng;
+                // let mut rng = rand::thread_rng();
+                // if rng.gen_bool(0.9) {
+                //     use graphics::Tile;
+                //     gfx.paint(Tile {
+                //         x: rng.gen_range(0..gfx.tiles_w()),
+                //         y: rng.gen_range(0..gfx.tiles_h()),
+                //         high: Color::WHITE,
+                //         low: Color::BLACK,
+                //         ..Tile::default()
+                //     })
+                // }
+                match bfs.step_goal(&maze) {
+                    Some(v) => gfx.paint(graphics::Tile {
+                        x: v.0 as u32,
+                        y: v.1 as u32,
+                        low: Color::WHITE,
+                        ..graphics::Tile::default()
+                    }),
+                    None => {}
+                };
 
                 gfx.update();
                 match gfx.render() {
