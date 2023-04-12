@@ -3,6 +3,7 @@ use cfg_if::cfg_if;
 use color::Color;
 use log::{debug, error, info, trace, warn};
 use maze::*;
+use rand::Rng;
 use search::*;
 use std::{default::Default, time::Duration};
 use winit::{
@@ -42,6 +43,15 @@ impl Default for MazeTest {
 
         maze.set(maze.goal.0, maze.goal.1, Room::Goal(0));
         maze.set(maze.home.0, maze.home.1, Room::Home(0));
+
+        let mut rng = rand::thread_rng();
+        for i in (0..5000) {
+            let r = rng.gen_range(0..maze.rooms.len());
+            match maze.rooms[r] {
+                Room::Empty => maze.rooms[r] = Room::Wall,
+                _ => {}
+            }
+        }
 
         maze
     }
@@ -111,7 +121,7 @@ async fn run() {
         let color = match room {
             Room::Home(_) => Color::RED,
             Room::Goal(_) => Color::GREEN,
-            Room::Wall => Color::GREY,
+            Room::Wall => Color::BLUE,
             _ => continue,
         };
         const D: f32 = 0.9;
@@ -119,8 +129,8 @@ async fn run() {
         gfx.paint(graphics::Tile {
             x: (i % maze.w) as u32,
             y: (i / maze.w) as u32,
-            low: color,
-            high: darker,
+            high: color,
+            low: darker,
             ..graphics::Tile::default()
         });
     }
